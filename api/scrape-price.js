@@ -18,11 +18,10 @@ export default async function handler(req, res) {
           async ({ page }) => {
             await page.goto("${url}", { waitUntil: "networkidle" });
             await page.waitForSelector(".price-points__value", { timeout: 10000 });
-
             const price = await page.$eval(".price-points__value", el => el.textContent.trim());
             return { price };
           }
-        `
+        `.trim()
       })
     });
 
