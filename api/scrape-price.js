@@ -5,13 +5,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { productId, condition, language, isFirstEdition, isHolo } = req.body;
+  const { productId } = req.body;
 
-  let url = `https://www.tcgplayer.com/product/${productId}/?page=1`;
-  if (language) url += `&Language=${encodeURIComponent(language)}`;
-  if (condition) url += `&Condition=${encodeURIComponent(condition.replace(/_/g, ' '))}`;
-  if (isFirstEdition) url += '&Printing=1st+Edition';
-  if (isHolo) url += '&Treatment=Holofoil';
+  if (!productId) {
+    return res.status(400).json({ error: 'Missing productId' });
+  }
+
+  // Minimal filtered URL
+  const url = `https://www.tcgplayer.com/product/${productId}/?page=1`;
 
   try {
     const browserlessResponse = await fetch('https://chrome.browserless.io/content?token=SBtaXKzPHtM4Gvf9011124547bb74fdc0ef45b5e29', {
@@ -22,13 +23,5 @@ export default async function handler(req, res) {
 
     const html = await browserlessResponse.text();
     const $ = cheerio.load(html);
-    const price = $('[data-testid="price-guide-price"]').first().text().trim().replace(/[^0-9.]/g, '');
 
-    if (!price) throw new Error('Price not found');
-
-    return res.status(200).json({ price, url, timestamp: new Date().toISOString() });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
-  }
-}
+    // ✅ Updated
