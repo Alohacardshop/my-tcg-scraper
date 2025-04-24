@@ -1,5 +1,3 @@
-import * as cheerio from 'cheerio';
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -12,32 +10,35 @@ export default async function handler(req, res) {
   }
 
   try {
-    const browserlessResponse = await fetch('https://chrome.browserless.io/scrape?token=SBtaXKzPHtM4Gvf9011124547bb74fdc0ef45b5e29', {
+    const browserlessResponse = await fetch('https://chrome.browserless.io/function?token=SBtaXKzPHtM4Gvf9011124547bb74fdc0ef45b5e29', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        url,
-        waitForSelector: '.price-points__value',
-        elements: ['.price-points__value']
+        code: `
+          async ({ page }) => {
+            await page.goto("${url}", { waitUntil: "networkidle" });
+            await page.waitForSelector(".price-points__value", { timeout: 10000 });
+
+            const price = await page.$eval(".price-points__value", el => el.textContent.trim());
+            return { price };
+          }
+        `
       })
     });
 
-    const json = await browserlessResponse.json();
-    const html = json.data?.[0]?.outerHTML || '';
-    const $ = cheerio.load(html);
-    const price = $('.price-points__value').first().text().trim().replace(/[^0-9.]/g, '');
+    const result = await browserlessResponse.json();
 
-    if (!price) {
-      throw new Error('Market price not found in rendered DOM');
+    if (!result || !result.price) {
+      throw new Error('Market price not found');
     }
 
     return res.status(200).json({
-      price,
+      price: result.price.replace(/[^0-9.]/g, ''),
       url,
       timestamp: new Date().toISOString()
     });
   } catch (err) {
-    console.error('Scraping error:', err.message);
+    console.error('Scraper error:', err.message);
     return res.status(500).json({ error: err.message });
   }
 }
