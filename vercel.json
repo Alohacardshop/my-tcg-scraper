@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/scrape-price.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/scrape-price", "dest": "api/scrape-price.js" }
+  ]
+}
