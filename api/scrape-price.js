@@ -10,20 +10,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    const code = `
-      async ({ page }) => {
-        await page.goto("${url}", { waitUntil: "networkidle" });
-        await page.waitForSelector(".price-points__value", { timeout: 10000 });
-        const price = await page.$eval(".price-points__value", el => el.textContent.trim());
-        return { price };
+    const browserlessResponse = await fetch(
+      'https://chrome.browserless.io/function?token=SBtaXKzPHtM4Gvf9011124547bb74fdc0ef45b5e29',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: `
+            async ({ page }) => {
+              await page.goto("${url}", { waitUntil: "networkidle" });
+              await page.waitForSelector(".price-points__value", { timeout: 10000 });
+              const price = await page.$eval(".price-points__value", el => el.textContent.trim());
+              return { price };
+            }
+          `
+        })
       }
-    `.replace(/\n/g, '').replace(/"/g, '\\"').trim();
-
-    const browserlessResponse = await fetch('https://chrome.browserless.io/function?token=SBtaXKzPHtM4Gvf9011124547bb74fdc0ef45b5e29', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: `"${code}"` })
-    });
+    );
 
     const result = await browserlessResponse.json();
 
