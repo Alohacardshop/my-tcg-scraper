@@ -12,20 +12,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    const browserlessResponse = await fetch('https://chrome.browserless.io/content?token=SBtaXKzPHtM4Gvf9011124547bb74fdc0ef45b5e29', {
+    const browserlessResponse = await fetch('https://chrome.browserless.io/scrape?token=SBtaXKzPHtM4Gvf9011124547bb74fdc0ef45b5e29', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url })
+      body: JSON.stringify({
+        url,
+        waitForSelector: '.price-points__value',
+        elements: ['.price-points__value']
+      })
     });
 
-    const html = await browserlessResponse.text();
+    const json = await browserlessResponse.json();
+    const html = json.data?.[0]?.outerHTML || '';
     const $ = cheerio.load(html);
-
-    // ✅ Use price-points__value to get market price
     const price = $('.price-points__value').first().text().trim().replace(/[^0-9.]/g, '');
 
     if (!price) {
-      throw new Error('Market price not found');
+      throw new Error('Market price not found in rendered DOM');
     }
 
     return res.status(200).json({
